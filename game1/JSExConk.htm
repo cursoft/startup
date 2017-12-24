@@ -1,0 +1,613 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+
+<html>
+
+<!--  The copyright of this Conker Season Simulator belongs to Ian E Currah ( 2003 )  --> 
+<!--  of Stratford-upon-Avon, UK .   You may copy this simulator for non-commercial   -->
+<!--  purposes provided that you copy this note along with it, thereby acknowledging   -->
+<!--  the author. In addition to this proviso, you are also requested to provide a  -->
+<!--  link to the author's Website at http://www.currah.co.uk/.  Note that the author -->
+<!--  of this Conker Season Simulator cannot take responsibility for the uses to which  -->
+<!--  it may be put by other people.  Therefore, if you have more than a casual  -->
+<!--  interest in the results of this Simulator, you should supplement them by studying  -->
+<!--  the relevant reputable publications and by consulting recognised experts in  -->
+<!--  sports and tournament design.  --> 
+<!--  Original version: U.26/03/03.  This updated version: V.22/05/06.  -->
+<!--  This version adjusts table layout to accommodate user's text size within the CSS scheme --> 
+
+<head>
+<title>Currah Consultancy - JavaScript Conkers</title>
+<meta http-equiv="content-type" content="text/html;charset=iso-8859-1" />
+<meta name="Author/date" content="Ian E Currah, November, 2005" />
+<meta name="dateofLastModification" CONTENT="20060522" />
+<link rel="stylesheet" type="text/css" href="../../CurSite.css" />
+<script type="text/javascript" src="../../CurSite.js"></script>
+
+<script language="JavaScript">
+<!--
+
+function initiate() {	
+	formObj = "document.form1"		//  Name of the form containing the HTML table
+	tNam = "table"		  		//  Name of the required table array
+	nRo = 10				 	//  Number of table rows
+	nCo = 7 					//  Number of table columns
+	makeTable( tNam, nRo, nCo)		//  Create the internal table object
+	table.bind = bindObj			//  Method to fill cells with HTML obj. refs.
+	table.bind(formObj, tNam, nRo,nCo)	//  Use method to fill cells with HTML obj. refs.
+	table.clearCol = clearC			//  Method for clearing a column of object values
+	table.clearRow = clearR			//  Method for clearing a row of object values	
+	String.prototype.rep = str_rep	//  Method for repeating strings
+	initiate2()
+	initiateButtons()				
+	cleanCells()				
+	if (initiate.caller != clearScores)
+		{document.form1.auto[0].checked = true}	
+}
+
+function initiate2() {
+	spacesPlayers = " ".rep(32)				
+	spacesPlay = " ".rep(34)						
+	playersEnabled = -1						
+	playEnabled = -1							
+	datrows = 10							
+	helpwin = null							
+	gamescount = 0							
+	numgames = 0							
+	g = 0									
+	player1 = 0								
+	player2 = 0								
+	winner = -1								
+}
+
+function makeTable(tname, rows, cols) {	
+	// Creates an internal table for subsequent binding to HTML table
+	eval(tname + " = new Array(" + (rows + 1) + ")")
+	for ( r = 0; r < rows + 1; r++) {
+		eval(tname + "[" + r + "] = new Array(" + (cols + 1) + ")")		
+	}
+}
+
+function bindObj(formob, tname, rows, cols) {
+	//  Fill the array with the names of the objects in the HTML table.
+	//  This is done by using previously assigned systematic object names (RnCn)
+	//  Alternatively, it could be done using the forms elements array.
+	var r
+	var c	
+	for ( r = 1; r < rows + 1; r++) {		
+		for (  c = 2; c < cols + 1; c++) {
+			cellRef = "R" + r + "C" + c	// The systematic object name
+			eval(tname + "[" + r + "][" + c + "] = " + formob + '.' + cellRef)			       
+		}
+	}
+}
+
+function clearC(col, start, stop) {
+	var j
+	for (j = start; j < stop + 1; j++) {
+		table[j][col].value = ""
+	}
+}
+
+function clearR(row, start, stop) {
+	//var j	
+	for (j = start; j < stop + 1; j++) {		
+		table[row][j].value = ""
+	}
+}
+
+function str_rep(n) {
+	var s = ""
+	var t = this.toString()
+	while (--n >= 0) s += t
+	return s
+}
+
+function initiateButtons() {
+	document.form1.selectPlayers.value = "Get next players"
+	document.form1.play.value = spacesPlay
+}
+
+
+function skillCheck() {
+	playerCount = 0
+	for (j = 1; j < datrows + 1; j++) {		
+		contents = parseInt(table[j][2].value)
+		if (contents < 1) contents = 1
+		type = isNaN(contents)
+		if (type == false) {			
+			table[j][2].value = contents
+			playerCount = playerCount + 1
+			} 		
+		if (type == true) table[j][2].value = ""
+		
+	}
+	retValue = true
+	if (playerCount < 2) {
+		msg = "There must be at least two active players.\n"
+		msg = msg + "Type a number in at least two of the boxes in the strength column."
+		alert(msg)
+		document.form1.selectPlayers.focus()
+		retValue = false
+		}
+return retValue
+}
+
+function getPlayers() {	
+	if(skillCheck() == false) return
+	if (playersEnabled == 0) return
+	playersEnabled = 0		
+	document.form1.selectPlayers.value = spacesPlayers
+	playersRoutine()	
+	playEnabled = 1
+	document.form1.play.value = "Play the game(s)"
+}
+
+function playGame() {
+	if (playEnabled <= 0) return
+	playEnabled = 0
+	document.form1.play.value = spacesPlay
+	if (document.form1.auto[2].checked == false) {
+		/*  Standard play options  */
+		if (document.form1.auto[0].checked) numgames = 1
+		if (document.form1.auto[1].checked) numgames = 10
+		for (g = 1; g < numgames + 1; g++) {
+			playRoutine()
+			if (g < numgames) 
+				{playersRoutine()}
+		}
+		g = 0
+	}
+	if (document.form1.auto[2].checked == true) {
+		/*  Each-plays-all option  */		
+		table.clearCol(3, 1, nRo)
+		for (pj = 1; pj < datrows + 1; pj++) {
+			if (checkSkillCell(pj)) continue 
+			for (pk = 1; pk < datrows + 1; pk++) {
+				if (checkSkillCell(pk)) continue 
+				if (pj != pk) {
+					player1 = pj
+					player2 = pk
+					playRoutine()
+				}
+			}	
+		}
+	/*  Finish in a logical position  */	
+	table[player1][3].value = "PL 1"	
+	table[player2][3].value = "PL 2"
+	}
+
+	playersEnabled = 1
+	document.form1.selectPlayers.value = "Get next players"
+}
+
+function playersRoutine() {
+	if (document.form1.auto[2].checked) {
+		/* This is each-plays-all so: */
+		playersRoutineEPA()
+		return
+		}
+	player1 = -1
+ 	player2 = -1
+ 	lowest = 1
+ 	highest = datrows
+ 	while (player1 == player2) {
+		cellBlank = true
+		while (cellBlank == true) {
+    			randomfactor1 = Math.random()		
+    			player1 = Math.floor((highest - lowest + 1) * randomfactor1 + lowest)
+			cellBlank = checkSkillCell(player1)
+		}
+		cellBlank = true
+		while (cellBlank == true) {
+			randomfactor2 = Math.random()	
+    			player2 = Math.floor((highest - lowest + 1) * randomfactor2 + lowest)
+			cellBlank = checkSkillCell(player2)
+		}
+ 	} 	
+	table.clearCol(3, 1, nRo)	
+	table[player1][3].value = "PL 1"	
+	table[player2][3].value = "PL 2"
+}
+
+function playersRoutineEPA() {
+	/*  Prepare for each-plays-all option and start in a logical position  */	
+	table.clearCol(3, 1, nRo)
+	table.clearCol(4, 1, nRo)	
+	//  Below is cosmetic because EPA procedure always starts at the top
+	for (j = 1; j < nRo + 1; j++) {
+		if (table[j][2].value != "" && table[j][3].value == "") {
+			player1 = j
+			table[player1][3].value = "PL 1"
+			break
+			}
+		}
+	for (j = 1; j < nRo + 1; j++) {
+		if (table[j][2].value != "" && table[j][3].value == "") {
+			player2 = j
+			table[player2][3].value = "PL 2"
+			break
+			}
+	}
+}
+
+function checkSkillCell(player) {	
+	if (table[player][2].value == "")
+		{cellBlank = true}
+	else
+		{cellBlank = false}
+	return cellBlank
+}
+
+function playRoutine() {
+	gamescount = gamescount + 1
+	document.form1.totalGames.value = gamescount
+	contest()
+	table.clearCol(4, 1, nRo)	
+	var P1 = player1
+	var P2 = player2	
+	table[P1][7].value = (table[P1][7].value - 0) + 1 	
+	table[P2][7].value = (table[P2][7].value - 0) + 1 
+	if (winner == 1) {		
+		table[P1][4].value = "W"
+		table[P2][4].value = "L"
+		if (document.form1.winnings[1].checked) { 			
+			table[P1][5].value = (table[P1][5].value - 0) + Math.floor((table[P2][5].value - 0) / 2) + 1
+			table[P2][5].value = (table[P2][5].value - 0) - Math.floor((table[P2][5].value - 0) / 2)	 
+		}
+		if (document.form1.winnings[0].checked) {			
+			table[P1][5].value = (table[P1][5].value - 0) + Math.floor(table[P2][5].value - 0) + 1			
+			table[P2][5].value = 0
+		}
+		if (document.form1.winnings[2].checked) {			
+			table[P1][5].value = (table[P1][5].value - 0) + 1
+		}		
+		table[P1][6].value = (table[P1][6].value - 0) + 1
+	}
+	if (winner == 2) {   	
+		table[P1][4].value = "L"		
+		table[P2][4].value = "W"  	
+		if (document.form1.winnings[1].checked) {        				
+			table[P2][5].value = (table[P2][5].value - 0) + Math.floor((table[P1][5].value - 0) / 2) + 1 
+			table[P1][5].value = (table[P1][5].value - 0)  - Math.floor((table[P1][5].value - 0) / 2)  
+		}    	
+		if (document.form1.winnings[0].checked) {        				
+			table[P2][5].value = (table[P2][5].value - 0) + Math.floor(table[P1][5].value - 0) + 1
+			table[P1][5].value = 0
+		}    	
+		if (document.form1.winnings[2].checked) {        		
+			table[P2][5].value = (table[P2][5].value - 0) + 1
+    		}
+		table[P2][6].value = (table[P2][6].value - 0) + 1 
+	}
+}
+
+
+function contest() {	
+	// Produces a random result biased by skill rank
+	// ( Checked with program CONKCHCK.BAS q.v.)
+
+	skillratio = (table[player1][2].value - 0) / (table[player2][2].value - 0)
+	probwin2 = 1 / (skillratio + 1)
+	probwin1 = 1 - probwin2
+	luck = Math.random()
+	if (luck <= probwin1)
+		{winner = 1}
+	else
+		{winner = 2}
+}
+
+function clearScores() {
+	cleanCells()	
+	initiate2()
+}
+
+function cleanCells() {
+	for (j = 3; j < 8; j++) {			
+		table.clearCol( j, 1, nRo)		
+	}	
+	document.form1.totalGames.value = "" 
+}
+
+function resetAll() {
+	playEnabled = 0
+	document.form1.play.value = spacesPlay
+	playersEnabled = 1
+	document.form1.selectPlayers.value = "Get next players"
+	document.form1.reset()
+	initiate()
+}
+
+function getHelp(anchor){
+	//helpMessage() not in current use
+	if (anchor == 1) HelpURL = "simhelp.htm"
+	if (anchor == 2) HelpURL = "simhelp.htm#whysim2"
+	//Close the window if already open, then open or reopen the window.
+	//This ensures that there is always a visible response to the Help button.
+	//The alternative of testing for a visible window is complex, browser-dependant and unreliable.
+	if (helpwin && helpwin.open && !helpwin.closed) helpwin.close();   
+	helpwin = 	window.open(HelpURL,"HelpWindow","resizable,screenX=400,screenY=200,alwaysRaised=yes,outerHeight=345,outerWidth=300,scrollbars,menubar,height=270,width=300,left=400,top=200");
+//helpmess.close() not in current use	
+}
+
+function helpMessage() {
+	helpmess = window.open("","helpmessage","resizable,screenX=40,screenY=100,alwaysRaised=yes,outerHeight=25,outerWidth=250,height=22,width=250,left=40,top=100");
+	helpmess.document.write("<html><head></head><body bgcolor='lightgrey'>")
+	helpmess.document.write("<center><font size='5' color='black' face='arial'><b>")
+	helpmess.document.write("Fetching help file,<br>please wait.")
+	helpmess.document.write("</b></font></center>")
+}
+
+//--> 
+</script>
+
+</head>
+
+<body>
+
+<a name="pageTop"></a>
+
+<div class="container">
+<a href="../../index.htm"><img id="logoSmall" src="../../imgs-sys/LogoSmal.gif"></a>
+
+<div style="font-size: smaller; overflow: auto">
+<form name="form1">
+
+<center>
+<font size="4" color="#00A000"><b>Conker Season Simulation</b></font><br>
+<a class="genlink" href="javascript:getHelp(2)">
+<span style="text-decoration: underline">Explanation</span></a></font><br>
+&nbsp;
+<table name="outer" border="0" cellpadding="0">
+<tr>
+<td valign="top">
+
+<table name="controls" border="0" width = "180" cellpadding="2">
+
+<tr>
+<td align="center"><input type="button" name="selectPlayers" value="&nbsp;Get next players&nbsp;" onclick="getPlayers()"></td>
+</tr>
+<tr>
+<td align="center"><input type="button" name="play" value="Play the game(s)" onclick="playGame()"></td>
+</tr>
+<tr>
+<td align="center"><input type="button" name="clear" value="Clear scores" onclick="clearScores()"></td>
+</tr>
+<tr>
+<td align="center"><input type="button" name="rset"  value="Reset all" onclick="resetAll()">
+<input type="button" name="help" value="Help" onclick="getHelp(1)"></td>
+</tr>
+<tr>
+<td style="font-size: .2em">&nbsp;</td>
+</tr>
+<tr>
+<td valign="top" align="center">
+
+<table border="1" name="settings">
+<!--caption><font color="gray"><b><font size="-1">Settings</font></font></b></caption-->
+<tr>
+<td colspan="2" align="center"><font color="gray"><b><font size="-1">Settings</font></font></b></font></td>
+</tr>
+<tr>
+<td align="center"><font size="-1">&nbsp;1 game per click&nbsp;&nbsp;</font></td>
+<td><input type="radio" name="auto" length="2" checked></td>
+</tr>
+<tr>
+<td align="center"><font size="-1">10 games per click</font></td>
+<td><input type="radio" name="auto" length="2"></td>
+</tr>
+<tr>
+<td align="center"><font size="-1">Each plays all</font></td>
+<td><input type="radio" name="auto" length="2" onclick="getPlayers()"></td>
+</tr>
+<tr>
+<td colspan="2">&nbsp;</td>
+</tr>
+<tr>
+<td align="center"><font size="-1">Winner takes 100%</font></td>
+<td><input type="radio" name="winnings" length="3" checked></td>
+</tr>
+<tr>
+<td align="center"><font size="-1">Winner takes 50%</font></td>
+<td><input type="radio" name="winnings" length="3"></td>
+</tr>
+<tr>
+<td align="center"><font size="-1">Winner takes 0%</font></td>
+<td><input type="radio" name="winnings" length="3"></td>
+</tr>
+</table><!--End of settings-->
+
+</td>
+</tr>
+</table><!--End of controlls-->
+
+</td>
+<td valign="top">
+
+<table name="grid" border="1" cellpadding="0">
+
+<tr>
+<td align="center">Group<br>&nbsp;member&nbsp;</td>
+<td align="center">&nbsp;Memb's&nbsp;<br>strength</td>
+<td align="center">&nbsp;Players<br>in this<br>game</td>
+<td align="center">&nbsp;Result&nbsp;<br>W or L</td>
+<td align="center">&nbsp;Memb's&nbsp;<br><b>score</b></td>
+</tr>
+<tr>
+<td align="center">A</td>
+<td align="center"><input type="text" name="R1C2" size="5" value="1" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R1C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R1C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R1C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">B</td>
+<td align="center"><input type="text" name="R2C2" size="5" value="2" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R2C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R2C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R2C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">C</td>
+<td align="center"><input type="text" name="R3C2" size="5" value="2" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R3C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R3C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R3C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">D</td>
+<td align="center"><input type="text" name="R4C2" size="5" value="3" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R4C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R4C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R4C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">E</td>
+<td align="center"><input type="text" name="R5C2" size="5" value="3" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R5C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R5C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R5C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">F</td>
+<td align="center"><input type="text" name="R6C2" size="5" value="3" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R6C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R6C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R6C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">G</td>
+<td align="center"><input type="text" name="R7C2" size="5" value="3" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R7C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R7C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R7C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">H</td>
+<td align="center"><input type="text" name="R8C2" size="5" value="4" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R8C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R8C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R8C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">I</td>
+<td align="center"><input type="text" name="R9C2" size="5" value="4" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R9C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R9C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R9C5" size="5" value=""></td>
+</tr>
+<tr>
+<td align="center">J</td>
+<td align="center"><input type="text" name="R10C2" size="5" value="5" onchange="skillCheck()"></td>
+<td align="center"><input type="text" name="R10C3" size="5" value=""></td>
+<td align="center"><input type="text" name="R10C4" size="5" value=""></td>
+<td align="center"><input type="text" name="R10C5" size="5" value=""></td>
+</tr>
+<tr>
+<td colspan="4" align="right">Total number of games played<b>:</b>&nbsp;</td>
+<td align="center"><input type="text" name="totalGames" size="5" value=""></td>
+</tr>
+</table><!--End of grid-->
+
+</td>
+<td valign="top">
+<table name="grid2" border="0" cellpadding="1">
+
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center">&nbsp;<br>Total<br>wins</td></font>
+<td align="center">&nbsp;<br>Total<br>games</td></font>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R1C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R1C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R2C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R2C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R3C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R3C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R4C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R4C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R5C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R5C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R6C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R6C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R7C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R7C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R8C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R8C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R9C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R9C7" size="4" value=""></td>
+</tr>
+<tr>
+<td align="center">&nbsp;</td>
+<td align="center"><input type="text" name="R10C6" size="4" value=""></td>
+<td align="center"><input type="text" name="R10C7" size="4" value=""></td>
+</tr>
+</table><!--End of grid2-->
+</td>
+</tr>
+</table><!--End of outer-->
+<font size="-2">V.22/05/06</font>
+<a class="genlink" href="simhelp.htm" target="_blank">&nbsp;</a>
+</center>
+
+</form>
+
+</div>
+
+<script language="javascript">initiate()</script>
+
+
+
+<div class="navBox">
+<ul class="navline">
+<li class="nav"><a class="navlink" href="javascript:scrollTo(0,0)">&nbsp;TOP&nbsp;</a></li>
+<li class="nav"><a class="navlink" href="javascript:history.back()">&nbsp;BACK&nbsp;</a></li>
+<li class="nav"><a class="navlink" href="../../index.htm">&nbsp;HOME&nbsp;</a></li>
+</ul>
+</div>
+</div>
+
+<div class="bottompad"></div>
+
+</body>
+
+<!--  The copyright of this Conker Season Simulator belongs to Ian E Currah ( 2003 )  --> 
+<!--  of Stratford-upon-Avon, UK .   You may copy this simulator for non-commercial   -->
+<!--  purposes provided that you copy this note along with it, thereby acknowledging   -->
+<!--  the author. In addition to this proviso, you are also requested to provide a  -->
+<!--  link to the author's Website at http://www.currah.co.uk/.  Note that the author -->
+<!--  of this Conker Season Simulator cannot take responsibility for the uses to which  -->
+<!--  it may be put by other people.  Therefore, if you have more than a casual  -->
+<!--  interest in the results of this Simulator, you should supplement them by studying  -->
+<!--  the relevant reputable publications and by consulting recognised experts in  -->
+<!--  sports and tournament design.  -->
+<!--  Original version: U.26/03/03.  This updated version: V.22/05/06.  -->
+<!--  This version adjusts table layout to accommodate user's text size within the CSS scheme -->
+
+</html>
+
